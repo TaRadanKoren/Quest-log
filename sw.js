@@ -1,8 +1,9 @@
 /* Quest Log – service worker
    Cieľ: appka sa otvorí aj bez internetu (po prvom načítaní) a nové verzie sa načítajú, keď si online. */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'questlog-app-' + VERSION;
 const FONTS = 'questlog-fonts';
+const LIBS = 'questlog-libs';
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', event => {
@@ -43,10 +44,12 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // Písma Google: uložená kópia hneď, v pozadí sa obnoví.
-  if(url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com'){
+  // Písma Google a knižnice Firebase: uložená kópia hneď, v pozadí sa obnoví.
+  const isFont = url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
+  const isLib = url.hostname === 'www.gstatic.com' && url.pathname.startsWith('/firebasejs/');
+  if(isFont || isLib){
     event.respondWith(
-      caches.open(FONTS).then(cache => cache.match(req).then(hit => {
+      caches.open(isLib ? LIBS : FONTS).then(cache => cache.match(req).then(hit => {
         const net = fetch(req).then(res => { cache.put(req, res.clone()); return res; }).catch(() => hit);
         return hit || net;
       }))
